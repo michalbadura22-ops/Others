@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35931.197 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimerTray", "TimerTray.csproj", "{FACFC763-BEA6-4E45-5B35-8B4EC3D4A46D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FACFC763-BEA6-4E45-5B35-8B4EC3D4A46D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FACFC763-BEA6-4E45-5B35-8B4EC3D4A46D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FACFC763-BEA6-4E45-5B35-8B4EC3D4A46D}.Debug|x64.ActiveCfg = Debug|x64
+		{FACFC763-BEA6-4E45-5B35-8B4EC3D4A46D}.Debug|x64.Build.0 = Debug|x64
+		{FACFC763-BEA6-4E45-5B35-8B4EC3D4A46D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FACFC763-BEA6-4E45-5B35-8B4EC3D4A46D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FACFC763-BEA6-4E45-5B35-8B4EC3D4A46D}.Release|x64.ActiveCfg = Release|x64
+		{FACFC763-BEA6-4E45-5B35-8B4EC3D4A46D}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {47F98AC7-5905-44BB-ADD4-7266CF7464D0}
+	EndGlobalSection
+EndGlobal

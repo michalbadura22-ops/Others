@@ -1,0 +1,7 @@
+TimerTray/bin/
+TimerTray/obj/
+TimerTray/.vs/
+*.user
+*.suo
+*.pdb
+*.cache
