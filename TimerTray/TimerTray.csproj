@@ -5,10 +5,19 @@
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>TimerTray.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="alarm.wav">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TimerTray.ico">
+      <LogicalName>TimerTray.ico</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 </Project>

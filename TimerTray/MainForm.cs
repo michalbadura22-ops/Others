@@ -14,6 +14,7 @@ namespace TimerTray
         private readonly NotifyIcon _tray;
         private readonly ContextMenuStrip _menu;
         private readonly FormsTimer _timer;
+        private readonly Icon _appIcon;
 
         private int _totalSeconds = 0;
         private string _message = "Czas minął!";
@@ -22,6 +23,9 @@ namespace TimerTray
         public MainForm()
         {
             InitializeComponent();
+            _appIcon = LoadEmbeddedIcon();
+            this.Icon = _appIcon;
+            this.ShowIcon = true;
 
             // Menu traya
             _menu = new ContextMenuStrip();
@@ -37,7 +41,7 @@ namespace TimerTray
             _menu.Items.Add("Pokaż okno", null, (s, e) => ShowWindow());
             _menu.Items.Add(new ToolStripSeparator());
             _menu.Items.Add("Start 5m", null, (s, e) => StartTimer(5 * 60, "Koniec 5 minut"));
-            _menu.Items.Add("Start 25m (Pomodoro)", null, (s, e) => StartTimer(25 * 60, "Koniec pomodoro"));
+            _menu.Items.Add("Start 25m", null, (s, e) => StartTimer(25 * 60, "Koniec 25 minut"));
             _menu.Items.Add("Stop", null, (s, e) => StopTimer());
             _menu.Items.Add(new ToolStripSeparator());
             var autostartItem = new ToolStripMenuItem("Autostart (włączony)")
@@ -56,12 +60,13 @@ namespace TimerTray
             // Ikona w zasobniku
             _tray = new NotifyIcon
             {
-                Icon = SystemIcons.Information,
+                Icon = _appIcon,
                 Visible = true,
                 Text = "TimerTray – kliknij, aby pokazać",
                 ContextMenuStrip = _menu,
                 BalloonTipIcon = ToolTipIcon.Info
             };
+            _tray.BalloonTipClicked += (s, e) => ShowWindow();
             _tray.DoubleClick += (s, e) => ShowWindow();
 
             // WinFormsowy timer 1s
@@ -96,6 +101,12 @@ namespace TimerTray
                 this.Hide();
                 this.ShowInTaskbar = false;
             };
+        }
+
+        private static Icon LoadEmbeddedIcon()
+        {
+            using var stream = typeof(MainForm).Assembly.GetManifestResourceStream("TimerTray.ico");
+            return stream is not null ? new Icon(stream) : SystemIcons.Information;
         }
 
         private void ShowWindow()
@@ -142,13 +153,17 @@ namespace TimerTray
                 shortcut.WorkingDirectory = workDir;
                 shortcut.WindowStyle = 7;
                 shortcut.Description = "TimerTray";
-                // shortcut.IconLocation = exePath + ",0"; // opcjonalnie
+                shortcut.IconLocation = $"{exePath},0";
                 shortcut.Save();
 
+                _tray.Icon = _appIcon;
+                _tray.BalloonTipIcon = ToolTipIcon.Info;
                 _tray.ShowBalloonTip(2000, "TimerTray", "Dodano do Autostartu.", ToolTipIcon.Info);
             }
             catch (Exception ex)
             {
+                _tray.Icon = _appIcon;
+                _tray.BalloonTipIcon = ToolTipIcon.Warning;
                 _tray.ShowBalloonTip(3000, "TimerTray", "Nie udało się dodać do Autostartu: " + ex.Message, ToolTipIcon.Warning);
             }
         }
@@ -287,6 +302,8 @@ namespace TimerTray
                 e.Cancel = true;
                 this.Hide();
                 this.ShowInTaskbar = false;
+                _tray.Icon = _appIcon;
+                _tray.BalloonTipIcon = ToolTipIcon.Info;
                 _tray.ShowBalloonTip(1500, "TimerTray", "Aplikacja działa w zasobniku.", ToolTipIcon.Info);
             }
         }
