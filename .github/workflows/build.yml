@@ -7,76 +7,89 @@ on:
   workflow_dispatch:
 
 jobs:
+  discover:
+    name: Discover projects
+    runs-on: windows-latest
+
+    outputs:
+      projects: ${{ steps.find-projects.outputs.projects }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find .NET projects
+        id: find-projects
+        shell: pwsh
+        run: |
+          $projects = @(
+            Get-ChildItem -Path . -Recurse -Filter *.csproj |
+              Where-Object {
+                $_.FullName -notmatch '\\bin\\' -and
+                $_.FullName -notmatch '\\obj\\' -and
+                $_.Name -notmatch '\.Tests?\.csproj$'
+              } |
+              ForEach-Object {
+                @{
+                  name = $_.BaseName
+                  path = [System.IO.Path]::GetRelativePath(
+                    $env:GITHUB_WORKSPACE,
+                    $_.FullName
+                  )
+                }
+              }
+          )
+
+          if ($projects.Count -eq 0) {
+            throw "Nie znaleziono projektow .csproj"
+          }
+
+          $json = ConvertTo-Json `
+            -InputObject $projects `
+            -Compress `
+            -Depth 5
+
+          "projects=$json" >> $env:GITHUB_OUTPUT
+
+          Write-Host "Znalezione projekty:"
+          Write-Host $json
+
   build:
     name: Build ${{ matrix.project.name }}
     needs: discover
     runs-on: windows-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.discover.outputs.projects) }}
+
     steps:
-      - name: Pobranie repozytorium
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Instalacja .NET 8
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
 
-      - name: Publikacja wszystkich projektów
+      - name: Publish ${{ matrix.project.name }}
         shell: pwsh
         run: |
-          $projects = Get-ChildItem -Path . -Recurse -Filter *.csproj |
-            Where-Object {
-              $_.FullName -notmatch '\\bin\\' -and
-              $_.FullName -notmatch '\\obj\\'
-            }
+          dotnet publish "${{ matrix.project.path }}" `
+            -c Release `
+            -r win-x64 `
+            --self-contained false `
+            -p:PublishSingleFile=true `
+            -o "publish\${{ matrix.project.name }}"
 
-          if ($projects.Count -eq 0) {
-            throw "Nie znaleziono projektów .csproj"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Publikacja projektu nie powiodla sie"
           }
 
-          foreach ($project in $projects) {
-            $projectName = [System.IO.Path]::GetFileNameWithoutExtension(
-              $project.Name
-            )
-
-            $outputName = $projectName
-
-            $outputPath = Join-Path `
-              $env:GITHUB_WORKSPACE `
-              "publish\$outputName"
-
-            Write-Host ""
-            Write-Host "========================================"
-            Write-Host "Publikowanie: $($project.FullName)"
-            Write-Host "Katalog wynikowy: $outputPath"
-            Write-Host "========================================"
-
-            dotnet publish $project.FullName `
-              -c Release `
-              -r win-x64 `
-              --self-contained false `
-              -p:PublishSingleFile=true `
-              -o $outputPath
-
-            if ($LASTEXITCODE -ne 0) {
-              throw "Publikacja projektu $($project.FullName) nie powiodła się"
-            }
-          }
-
-            - name: Przesłanie osobnych artefaktów
-        shell: pwsh
-        run: |
-          $directories = Get-ChildItem `
-            -Path "$env:GITHUB_WORKSPACE\publish" `
-            -Directory
-
-          foreach ($directory in $directories) {
-            Write-Host "Przesyłanie artefaktu: $($directory.Name)"
-
-            gh extension install actions/gh-actions-cache 2>$null
-
-            Compress-Archive `
-              -Path "$($directory.FullName)\*" `
-              -DestinationPath "$env:RUNNER_TEMP\$($directory.Name).zip" `
-              -Force
-          }
+      - name: Upload ${{ matrix.project.name }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.project.name }}-win-x64
+          path: publish/${{ matrix.project.name }}/
+          if-no-files-found: error
