@@ -1,10 +1,14 @@
-TimerTray/bin/
-TimerTray/obj/
-TimerTray/.vs/
+# Wyniki kompilacji .NET
 bin/
 obj/
+publish/
+
+# Visual Studio
 .vs/
 *.user
 *.suo
 *.pdb
 *.cache
+
+# Log aplikacji
+VpnMonitor.log
