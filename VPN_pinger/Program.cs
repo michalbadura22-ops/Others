@@ -18,7 +18,7 @@ public sealed class MonitorForm : Form
     private readonly TargetState[] targets =
     [
         new("Internet", "1.1.1.1"),
-        new("VPN", "10.61.32.144")
+        new("VPN", "172.16.33.12")
     ];
 
     private readonly TimeSpan interval = TimeSpan.FromSeconds(5);
