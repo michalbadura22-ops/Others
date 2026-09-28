@@ -14,7 +14,7 @@ internal static class Program
 
 public sealed class MonitorForm : Form
 {
-    // Ping official DNS and FrotiClien KTW gate
+    // Ping official DNS and FrotiClient DNS
     private readonly TargetState[] targets =
     [
         new("Internet", "1.1.1.1"),
@@ -31,17 +31,31 @@ public sealed class MonitorForm : Form
         AppContext.BaseDirectory,
         "VpnMonitor.log");
 
+    private void MoveToTopRight()
+    {
+        Rectangle workingArea = Screen.FromControl(this).WorkingArea;
+
+        const int left_margin = 0;
+        const int top_margin = 40;
+
+        Location = new Point(
+            workingArea.Right - Width - left_margin,
+            workingArea.Top + top_margin
+        );
+    }
+
     private bool checkRunning;
 
     public MonitorForm()
     {
         Text = "VPN Monitor";
-        ClientSize = new Size(350, 58);
+        //ClientSize = new Size(300, 58);
 
         TopMost = true;
         ShowInTaskbar = true;
         MaximizeBox = false;
         FormBorderStyle = FormBorderStyle.FixedSingle;
+
 
         statusLabel.AutoSize = true;
         statusLabel.Dock = DockStyle.None;
@@ -50,7 +64,7 @@ public sealed class MonitorForm : Form
         statusLabel.Font = new Font("Consolas", 9);
         statusLabel.Location = Point.Empty;
         statusLabel.Text = "Monitoring...";
-
+        Opacity = 0.65;
         Controls.Add(statusLabel);
 
         timer.Interval = (int)interval.TotalMilliseconds;
@@ -60,6 +74,8 @@ public sealed class MonitorForm : Form
         {
             timer.Start();
             await CheckConnectionsAsync();
+
+            MoveToTopRight();
         };
     }
 
@@ -178,12 +194,34 @@ public sealed class MonitorForm : Form
         statusLabel.Text = text.ToString();
 
         ClientSize = new Size(
-            Math.Max(350, statusLabel.PreferredWidth),
+            Math.Max(330, statusLabel.PreferredWidth),
             statusLabel.PreferredHeight);
+            ShowInTaskbar = true;
 
-        BackColor = targets.All(t => t.LastResult.Success)
-            ? Color.Honeydew
-            : Color.MistyRose;
+
+        bool internetAvailable = targets
+            .First(t => t.Name == "Internet")
+            .LastResult.Success;
+
+        bool vpnAvailable = targets
+            .First(t => t.Name == "VPN")
+            .LastResult.Success;
+
+        if (internetAvailable && vpnAvailable)
+        {
+            BackColor = Color.MediumSeaGreen;
+            statusLabel.ForeColor = Color.White;
+        }
+        else if (internetAvailable && !vpnAvailable)
+        {
+            BackColor = Color.DarkOrange;
+            statusLabel.ForeColor = Color.White;
+        }
+        else
+        {
+            BackColor = Color.Crimson;
+            statusLabel.ForeColor = Color.White;
+        }
     }
 
     private void Log(
@@ -204,7 +242,7 @@ public sealed class MonitorForm : Form
         {
             File.AppendAllText(
                 logPath,
-                line + Environment.NewLine,
+                $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff};Start Monitoring{Environment.NewLine}",
                 Encoding.UTF8);
         }
         catch
