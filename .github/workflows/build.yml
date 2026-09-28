@@ -8,6 +8,8 @@ on:
 
 jobs:
   build:
+    name: Build ${{ matrix.project.name }}
+    needs: discover
     runs-on: windows-latest
 
     steps:
@@ -37,20 +39,7 @@ jobs:
               $project.Name
             )
 
-            $relativeDirectory = [System.IO.Path]::GetRelativePath(
-              $env:GITHUB_WORKSPACE,
-              $project.DirectoryName
-            )
-
-            $safeDirectory = $relativeDirectory `
-              -replace '[\\/:*?"<>|]', '-'
-
-            if ($safeDirectory -eq ".") {
-              $outputName = $projectName
-            }
-            else {
-              $outputName = "$safeDirectory-$projectName"
-            }
+            $outputName = $projectName
 
             $outputPath = Join-Path `
               $env:GITHUB_WORKSPACE `
@@ -74,9 +63,20 @@ jobs:
             }
           }
 
-      - name: Zapisanie wszystkich aplikacji
-        uses: actions/upload-artifact@v4
-        with:
-          name: dotnet-applications-win-x64
-          path: publish/
-          if-no-files-found: error
+            - name: Przesłanie osobnych artefaktów
+        shell: pwsh
+        run: |
+          $directories = Get-ChildItem `
+            -Path "$env:GITHUB_WORKSPACE\publish" `
+            -Directory
+
+          foreach ($directory in $directories) {
+            Write-Host "Przesyłanie artefaktu: $($directory.Name)"
+
+            gh extension install actions/gh-actions-cache 2>$null
+
+            Compress-Archive `
+              -Path "$($directory.FullName)\*" `
+              -DestinationPath "$env:RUNNER_TEMP\$($directory.Name).zip" `
+              -Force
+          }
