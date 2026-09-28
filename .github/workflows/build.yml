@@ -1,0 +1,82 @@
+name: Build all .NET applications
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Pobranie repozytorium
+        uses: actions/checkout@v4
+
+      - name: Instalacja .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publikacja wszystkich projektów
+        shell: pwsh
+        run: |
+          $projects = Get-ChildItem -Path . -Recurse -Filter *.csproj |
+            Where-Object {
+              $_.FullName -notmatch '\\bin\\' -and
+              $_.FullName -notmatch '\\obj\\'
+            }
+
+          if ($projects.Count -eq 0) {
+            throw "Nie znaleziono projektów .csproj"
+          }
+
+          foreach ($project in $projects) {
+            $projectName = [System.IO.Path]::GetFileNameWithoutExtension(
+              $project.Name
+            )
+
+            $relativeDirectory = [System.IO.Path]::GetRelativePath(
+              $env:GITHUB_WORKSPACE,
+              $project.DirectoryName
+            )
+
+            $safeDirectory = $relativeDirectory `
+              -replace '[\\/:*?"<>|]', '-'
+
+            if ($safeDirectory -eq ".") {
+              $outputName = $projectName
+            }
+            else {
+              $outputName = "$safeDirectory-$projectName"
+            }
+
+            $outputPath = Join-Path `
+              $env:GITHUB_WORKSPACE `
+              "publish\$outputName"
+
+            Write-Host ""
+            Write-Host "========================================"
+            Write-Host "Publikowanie: $($project.FullName)"
+            Write-Host "Katalog wynikowy: $outputPath"
+            Write-Host "========================================"
+
+            dotnet publish $project.FullName `
+              -c Release `
+              -r win-x64 `
+              --self-contained false `
+              -p:PublishSingleFile=true `
+              -o $outputPath
+
+            if ($LASTEXITCODE -ne 0) {
+              throw "Publikacja projektu $($project.FullName) nie powiodła się"
+            }
+          }
+
+      - name: Zapisanie wszystkich aplikacji
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-applications-win-x64
+          path: publish/
+          if-no-files-found: error
